@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Copyright 2019 Warkdev.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://java.sun.com/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:p="http://primefaces.org/ui">
+    <h:head>
+        <meta charset="utf-8"/>        
+        <h:outputStylesheet name="primeicons/primeicons.css" library="primefaces"/>   
+        <h:outputStylesheet library="default" name="css/index.css"/>
+        <f:loadBundle basename="eu.bm.bundle.users.messages" var="msg"/>
+        <title>#{msg['page.registration.title']}</title>
+        <script type="text/javascript">
+            var SRP6CryptoParams = {
+                N_base10: "#{srp6ParamsBean.n}",
+                g_base10: "#{srp6ParamsBean.g}",
+                k_base16: "#{srp6ParamsBean.k}"
+            };
+
+            var passwordMessage = "#{msg['registrationForm.password.invalid']}";
+            var confirmMessage = "#{msg['registrationForm.confirm.invalid']}";
+
+            function handleRegistration() {
+                var password = document.getElementById('registrationForm:password').value;
+                var username = document.getElementById('registrationForm:username').value;
+                document.getElementById('registrationForm:password').value = null;
+                document.getElementById('registrationForm:confirm').value = null;
+
+                var srpClient = new SRP6JavascriptClientSessionSHA256();
+                var salt = srpClient.generateRandomSalt();
+                var verifier = srpClient.generateVerifier(salt, username, password);
+
+                document.getElementById('registrationForm:salt').value = salt;
+                document.getElementById('registrationForm:verifier').value = verifier;
+
+                console.log("Salt: " + salt);
+                console.log("Verifier: " + verifier);
+
+                return true;
+            }
+
+            function checkPassword() {
+                var password = document.getElementById('registrationForm:password').value;
+                var confirm = document.getElementById('registrationForm:confirm').value;
+
+                if (!password) {
+                    console.log("Password is empty.");
+
+                    document.getElementById('registrationForm:passwordError').value = passwordMessage;
+                } else {
+                    document.getElementById('registrationForm:passwordError').value = '';
+                }
+
+                if (!confirm) {
+                    console.log("Confirmation password is empty");
+
+                    document.getElementById('registrationForm:confirmError').value = confirmMessage;
+                } else {
+                    document.getElementById('registrationForm:confirmError').value = '';
+                }
+
+                if (password !== confirm) {
+                    console.log("Password and confirmation are not matching");
+
+                    document.getElementById('registrationForm:confirmError').value = confirmMessage;
+                }
+            }
+        </script>
+        <h:outputScript library="default" name="js/thinbus-srp/thinbus-srp6a-sha256-versioned.js"/>
+    </h:head>
+    <h:body>        
+        <h:form id="registrationForm">
+            <p:growl id="messages" widgetVar="messagesWV" showDetail="true" sticky="true" />        
+            <fieldset>
+                <legend>#{msg['registrationForm.legend']}</legend>
+                <p:panelGrid styleClass="formGrid">
+
+                    <p:row>
+                        <p:column>
+                            <h:outputLabel for="username" value="#{msg['registrationForm.name']}"/>
+                        </p:column>
+                        <p:column>
+                            <p:inputText id="username" size="20" maxlength="60" value="#{registrationBean.user.name}" autocomplete="off">
+                                <f:ajax event="blur" render="nameMessage" />
+                                <f:validator validatorId="eu.bm.validators.UserExistValidator" />
+                            </p:inputText>
+                        </p:column>
+                        <p:column>
+                            <p:message id="nameMessage" for="username" />
+                        </p:column>
+                    </p:row>
+
+                    <p:row>
+                        <p:column>
+                            <h:outputLabel for="password" value="#{msg['registrationForm.password']}"/>
+                        </p:column>
+                        <p:column>
+                            <p:inputText id="password" type="password" autocomplete="new-password" onkeyup="checkPassword()"/>                        
+                        </p:column>
+                        <p:column>
+                            <p:message id="passwordMessage" for="passwordError"/>                    
+                        </p:column>
+                    </p:row>
+
+                    <p:row>                        
+                        <p:column>
+                            <h:outputLabel for="confirm" value="#{msg['registrationForm.confirm']}"/>
+                        </p:column>
+                        <p:column>
+                            <p:inputText id="confirm" type="password" autocomplete="off" onkeyup="checkPassword()"/>
+                        </p:column>
+                        <p:column>
+                            <p:message id="confirmMessage" for="confirmError"/>                                                            
+                        </p:column>                        
+                    </p:row>
+
+                    <p:row>
+                        <p:column colspan="2">
+                            <p:commandButton id="signupbtn" value="#{msg['registrationForm.action.registration']}" icon="pi pi-save"     
+                                             onclick="return handleRegistration();"
+                                             action="#{registrationBean.register}"                                     
+                                             >
+                                <f:ajax execute="@form" render="@form" />
+                            </p:commandButton>
+                        </p:column>
+                    </p:row>
+
+                </p:panelGrid>
+
+                <p:inputText id="passwordError" value="#{registrationBean.passwordMessage}" type="hidden">
+                    <f:ajax event="blur" render="passwordMessage"/>
+                    <f:validator validatorId="eu.bm.validators.TextExistValidator" />
+                </p:inputText>
+                <p:inputText id="confirmError" value="#{registrationBean.confirmMessage}" type="hidden">
+                    <f:ajax event="blur" render="confirmMessage"/>
+                    <f:validator validatorId="eu.bm.validators.TextExistValidator" />
+                </p:inputText>
+                <p:inputText id="salt" value="#{registrationBean.user.salt}" type="hidden" />
+                <p:inputText id="verifier" value="#{registrationBean.user.verifier}" type="hidden" />
+            </fieldset>
+        </h:form>
+    </h:body>
+    <footer>
+        <script type="text/js">
+            document.getElementById('registrationForm:passwordMessage').className = 'hidden';
+            document.getElementById('registrationForm:confirmMessage').className = 'hidden';
+        </script>
+    </footer>
+</html>
