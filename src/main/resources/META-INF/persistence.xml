@@ -4,7 +4,10 @@
     <persistence-unit name="AUTH_PU" transaction-type="JTA">
         <jta-data-source>jdbc/AuthDBDS</jta-data-source>
     </persistence-unit>
-    <persistence-unit name="SERVER_PU" transaction-type="JTA">
-        <jta-data-source>jdbc/ServerDBDS</jta-data-source>
+    <persistence-unit name="CHAR_PU" transaction-type="JTA">
+        <jta-data-source>jdbc/CharDBDS</jta-data-source>
+    </persistence-unit>
+    <persistence-unit name="WORLD_PU" transaction-type="JTA">
+        <jta-data-source>jdbc/WorldDBDS</jta-data-source>
     </persistence-unit>
 </persistence>
